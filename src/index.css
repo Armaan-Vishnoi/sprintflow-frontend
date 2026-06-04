@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+.input{
+
+@apply
+w-full
+p-3
+rounded
+bg-gray-800
+outline-none;
+
+}
