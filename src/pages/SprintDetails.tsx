@@ -108,23 +108,35 @@ export default function SprintDetails() {
   }, [projectId, user]);
 
   const add = async (data: any) => {
-    const taskData = {
-      ...data,
+    try {
+      const taskData = {
+        ...data,
+        projectId,
+        sprintId,
+        status: "TODO",
+      };
 
-      projectId,
+      const res = await createTask(taskData);
 
-      sprintId,
+      // instant frontend update
+      const newTask = res.task || res.data?.task || res.data;
 
-      status: "TODO",
-    };
+      if (newTask) {
+        setTasks((prev) => [newTask, ...prev]);
+      }
 
-    await createTask(taskData);
+      toast.success("Task created successfully 🚀");
 
-    toast.success("Task created successfully 🚀");
+      // close modal
+      setOpen(false);
 
-    setOpen(false);
+      // sync with backend
+      await load();
+    } catch (error) {
+      console.error(error);
 
-    load();
+      toast.error("Failed to create task ❌");
+    }
   };
 
   const changeStatus = async (
