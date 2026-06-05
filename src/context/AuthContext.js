@@ -1,8 +1,16 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useState } from "react";
+import { socket } from "../socket/socket";
+import { useEffect } from "react";
 const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem("user") || "null"));
+    useEffect(() => {
+        if (!socket.connected) {
+            socket.connect();
+        }
+        return () => { };
+    }, []);
     const login = (user, token) => {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));

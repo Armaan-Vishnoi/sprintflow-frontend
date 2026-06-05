@@ -9,10 +9,10 @@ import { useNavigate } from "react-router-dom";
 import { getNotifications } from "../api/notificationApi";
 
 import { socket } from "../socket/socket";
-
+import { useAuth } from "../context/AuthContext";
 export default function Sidebar() {
   const [user, setUser] = useState<any>(null);
-
+  const { user: authUser } = useAuth();
   const [unread, setUnread] = useState(0);
 
   const navigate = useNavigate();
@@ -26,39 +26,22 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
-    window.addEventListener(
-      "notifications-updated",
-
-      loadNotifications,
-    );
-
-    getProfile()
-      .then((res) => {
-        setUser(res.user);
-      })
-
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    getProfile().then((res) => {
-      setUser(res.user);
-    });
-
     loadNotifications();
 
-    socket.on(
-      "notification",
+    const update = (data: any) => {
+      console.log("LIVE NOTIFICATION", data);
 
-      () => {
-        loadNotifications();
-      },
-    );
+      if (data.userId === authUser?._id) {
+        setUnread((old) => old + 1);
+      }
+    };
+
+    socket.on("notification", update);
 
     return () => {
-      socket.off("notification");
+      socket.off("notification", update);
     };
-  }, []);
+  }, [authUser]);
 
   const menu = [
     {

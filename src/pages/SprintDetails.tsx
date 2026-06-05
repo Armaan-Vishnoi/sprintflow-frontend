@@ -57,102 +57,79 @@ export default function SprintDetails() {
     load();
 
     loadProject();
-  }, []);
+  }, [sprintId]);
 
   useEffect(() => {
     if (!projectId || !user) return;
 
-    socket.emit(
-      "join-project",
+    const userId = user._id || user.id;
 
-      {
-        projectId,
+    socket.emit("join-project", {
+      projectId,
+      userId,
+    });
 
-        userId: user._id || user.id,
-      },
-    );
+    const reload = async () => {
+      console.log("SOCKET TASK RELOAD");
 
-    const handleCreate = (task: any) => {
-      setTasks((prev) => {
-        const exists = prev.some((t) => t._id === task._id);
+      const res = await getSprintTasks(sprintId!);
 
-        if (exists) return prev;
+      const list = res.tasks || [];
 
-        return [task, ...prev];
-      });
+      // HARD REPLACE STATE
+      setTasks([...list]);
     };
 
-    const handleUpdate = (task: any) => {
-      setTasks((prev) => prev.map((t) => (t._id === task._id ? task : t)));
-    };
+    socket.off("task-created");
+    socket.off("task-updated");
 
-    socket.on(
-      "task-created",
-
-      handleCreate,
-    );
-
-    socket.on(
-      "task-updated",
-
-      handleUpdate,
-    );
+    socket.on("task-created", reload);
+    socket.on("task-updated", reload);
 
     return () => {
-      socket.off(
-        "task-created",
-
-        handleCreate,
-      );
-
-      socket.off(
-        "task-updated",
-
-        handleUpdate,
-      );
+      socket.off("task-created", reload);
+      socket.off("task-updated", reload);
     };
-  }, [projectId, user]);
+  }, [projectId, sprintId, user]);
 
   const add = async (data: any) => {
     try {
-      const taskData = {
+      await createTask({
         ...data,
         projectId,
         sprintId,
         status: "TODO",
-      };
+      });
 
-      await createTask(taskData);
+      toast.success("Task created 🚀");
 
-      toast.success("Task created successfully 🚀");
-
-      // close create task modal
       setOpen(false);
-
-      // refresh tasks immediately
-      await load();
-    } catch (error: any) {
-      console.log("CREATE TASK ERROR:", error);
-
-      toast.error(error?.response?.data?.message || "Failed to create task ❌");
+    } catch (error) {
+      toast.error("Create failed");
     }
   };
+  const changeStatus = async (id: string, status: string) => {
+    const oldTasks = tasks;
 
-  const changeStatus = async (
-    id: string,
+    setTasks((prev) =>
+      prev.map((t) =>
+        t._id === id
+          ? {
+              ...t,
+              status,
+            }
+          : t,
+      ),
+    );
 
-    status: string,
-  ) => {
     try {
-      await updateTaskStatus(
-        id,
-
-        status,
-      );
+      await updateTaskStatus(id, status);
 
       toast.success("Task status updated ⚡");
-    } finally {
-      load();
+    } catch (error) {
+      setTasks(oldTasks);
+
+      toast.error("Status update failed");
     }
   };
 
@@ -291,7 +268,11 @@ gap-6
 "
       >
         {columns.map((column) => {
-          const filtered = tasks.filter((t) => t.status === column.name);
+          const uniqueTasks = [
+            ...new Map(tasks.map((t) => [t._id, t])).values(),
+          ];
+
+          const filtered = uniqueTasks.filter((t) => t.status === column.name);
 
           return (
             <div

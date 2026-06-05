@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
-
+import { socket } from "../socket/socket";
+import { useEffect } from "react";
 interface AuthContextType {
   user: any;
 
@@ -15,6 +16,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(
     JSON.parse(localStorage.getItem("user") || "null"),
   );
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    return () => {};
+  }, []);
 
   const login = (user: any, token: string) => {
     localStorage.setItem("token", token);

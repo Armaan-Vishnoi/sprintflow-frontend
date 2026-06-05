@@ -26,6 +26,15 @@ export default function Notifications() {
         load();
         loadProfile();
     }, []);
+    useEffect(() => {
+        const update = () => {
+            load();
+        };
+        socket.on("notification", update);
+        return () => {
+            socket.off("notification", update);
+        };
+    }, []);
     const readOne = async (id) => {
         await markRead(id);
         load();
