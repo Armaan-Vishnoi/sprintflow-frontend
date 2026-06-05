@@ -43,7 +43,12 @@ export default function SprintDetails() {
             userId: user._id || user.id,
         });
         const handleCreate = (task) => {
-            setTasks((prev) => [task, ...prev]);
+            setTasks((prev) => {
+                const exists = prev.some((t) => t._id === task._id);
+                if (exists)
+                    return prev;
+                return [task, ...prev];
+            });
         };
         const handleUpdate = (task) => {
             setTasks((prev) => prev.map((t) => (t._id === task._id ? task : t)));
@@ -63,21 +68,16 @@ export default function SprintDetails() {
                 sprintId,
                 status: "TODO",
             };
-            const res = await createTask(taskData);
-            // instant frontend update
-            const newTask = res.task || res.data?.task || res.data;
-            if (newTask) {
-                setTasks((prev) => [newTask, ...prev]);
-            }
+            await createTask(taskData);
             toast.success("Task created successfully 🚀");
-            // close modal
+            // close create task modal
             setOpen(false);
-            // sync with backend
+            // refresh tasks immediately
             await load();
         }
         catch (error) {
-            console.error(error);
-            toast.error("Failed to create task ❌");
+            console.log("CREATE TASK ERROR:", error);
+            toast.error(error?.response?.data?.message || "Failed to create task ❌");
         }
     };
     const changeStatus = async (id, status) => {
