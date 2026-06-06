@@ -41,7 +41,11 @@ export default function SprintDetails() {
 
       const list = res.tasks || res.data || res.task || [];
 
-      setTasks(list);
+      const unique = Array.from(
+        new Map(list.map((task: any) => [task._id, task])).values(),
+      );
+
+      setTasks(unique);
     } finally {
       setLoading(false);
     }
@@ -101,10 +105,10 @@ export default function SprintDetails() {
         status: "TODO",
       });
 
-      toast.success("Task created 🚀");
-
       setOpen(false);
-    } catch (error) {
+
+      toast.success("Task created 🚀");
+    } catch (e) {
       toast.error("Create failed");
     }
   };

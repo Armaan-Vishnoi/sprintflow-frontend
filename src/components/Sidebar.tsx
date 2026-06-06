@@ -2,36 +2,38 @@ import { useEffect, useState } from "react";
 
 import { NavLink } from "react-router-dom";
 
-import { getProfile } from "../api/profileApi";
-
 import { useNavigate } from "react-router-dom";
 
 import { getNotifications } from "../api/notificationApi";
 
 import { socket } from "../socket/socket";
+
 import { useAuth } from "../context/AuthContext";
+
 export default function Sidebar() {
-  const [user, setUser] = useState<any>(null);
-  const { user: authUser } = useAuth();
+  const { user } = useAuth();
+
   const [unread, setUnread] = useState(0);
 
   const navigate = useNavigate();
 
   const loadNotifications = async () => {
-    const res = await getNotifications();
+    try {
+      const res = await getNotifications();
 
-    const count = res.notifications.filter((n: any) => !n.isRead).length;
+      const count = res.notifications.filter((n: any) => !n.isRead).length;
 
-    setUnread(count);
+      setUnread(count);
+    } catch (error) {
+      console.log("Notification error", error);
+    }
   };
 
   useEffect(() => {
     loadNotifications();
 
     const update = (data: any) => {
-      console.log("LIVE NOTIFICATION", data);
-
-      if (data.userId === authUser?._id) {
+      if (data.userId === user?._id) {
         setUnread((old) => old + 1);
       }
     };
@@ -41,7 +43,7 @@ export default function Sidebar() {
     return () => {
       socket.off("notification", update);
     };
-  }, [authUser]);
+  }, [user]);
 
   const menu = [
     {
@@ -154,7 +156,11 @@ relative
             >
               <img
                 src={
-                  user?.profilePicture ? user.profilePicture : "/default.png"
+                  user?.profilePicture
+                    ? user.profilePicture.startsWith("http")
+                      ? user.profilePicture
+                      : `http://localhost:5000/${user.profilePicture}`
+                    : "/default.png"
                 }
                 onError={(e: any) => {
                   e.currentTarget.src = "/default.png";

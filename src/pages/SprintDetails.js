@@ -21,7 +21,8 @@ export default function SprintDetails() {
             setLoading(true);
             const res = await getSprintTasks(sprintId);
             const list = res.tasks || res.data || res.task || [];
-            setTasks(list);
+            const unique = Array.from(new Map(list.map((task) => [task._id, task])).values());
+            setTasks(unique);
         }
         finally {
             setLoading(false);
@@ -67,10 +68,10 @@ export default function SprintDetails() {
                 sprintId,
                 status: "TODO",
             });
-            toast.success("Task created 🚀");
             setOpen(false);
+            toast.success("Task created 🚀");
         }
-        catch (error) {
+        catch (e) {
             toast.error("Create failed");
         }
     };
